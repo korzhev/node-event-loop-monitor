@@ -103,7 +103,6 @@ EventLoopMonitor.prototype.start = function (customInterval, rawFlag) {
         }, {});
 
         if (rawFlag) {
-            console.log(_ticks)
             this.emit('rawData', _ticks);
         } else {
             var ct = new CartesianTree();
