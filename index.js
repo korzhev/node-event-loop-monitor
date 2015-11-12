@@ -79,8 +79,9 @@ EventLoopMonitor.prototype.resume = function (customInterval) {
 };
 
 
-EventLoopMonitor.prototype.start = function (customInterval, rawFlag) {
+EventLoopMonitor.prototype.start = function (customInterval, rawFlag, percentileList) {
     var customInterval = customInterval || 4 * 1000;
+    var percentileList = percentileList || [0.5, 0.9, 0.99];
 
     this._loopMonitor = setInterval(function () {
         ticks.push(process.hrtime(time));
@@ -110,15 +111,14 @@ EventLoopMonitor.prototype.start = function (customInterval, rawFlag) {
                 ct.add(parseInt(key, 10), _ticks[key]);
             }
 
-            var json = ct.statByPercentile([0.5, 0.9, 0.95, 0.99, 1]);
+            var json = ct.statByPercentile(percentileList);
 
-            this.emit('data', {
-                'p50': Math.floor(json[0.5].k || 0),
-                'p90': Math.floor(json[0.9].k || 0),
-                'p95': Math.floor(json[0.95].k || 0),
-                'p99': Math.floor(json[0.99].k || 0),
-                'p100': Math.floor(json[1].k || 0)
-            });
+            this.emit('data',
+                percentileList.reduce(function(res, current) {
+                    res['p' + current] = Math.floor(json[current].k || 0);
+                    return res;
+                }, {})
+            );
         }
         // https://www.scirra.com/blog/76/how-to-write-low-garbage-real-time-javascript
         /*
