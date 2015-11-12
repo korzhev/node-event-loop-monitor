@@ -115,7 +115,7 @@ EventLoopMonitor.prototype.start = function (customInterval, rawFlag, percentile
 
             this.emit('data',
                 percentileList.reduce(function(res, current) {
-                    res['p' + current] = Math.floor(json[current].k || 0);
+                    res['p' + current*100] = Math.floor(json[current].k || 0);
                     return res;
                 }, {})
             );
