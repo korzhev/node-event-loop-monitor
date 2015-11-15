@@ -1,7 +1,7 @@
 node-event-loop-monitor
 =======================
 
-NodeJS event loop latency monitor
+NodeJS event loop monitor
 
 Installation
 ------------

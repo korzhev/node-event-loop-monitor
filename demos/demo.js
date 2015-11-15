@@ -1,4 +1,4 @@
-var monitor = require('./'),
+var monitor = require('./../index'),
    loopDone = false,
    afterTicks = 0,
    loopCount = 0;
