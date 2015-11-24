@@ -129,7 +129,7 @@ EventLoopMonitor.prototype.start = function (customInterval, rawFlag, percentile
          */
         ticks[0] = ticks.pop();
         ticks.length = 1;
-    }, customInterval);
+    }.bind(this), customInterval);
 
 };
 
