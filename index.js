@@ -92,9 +92,9 @@ EventLoopMonitor.prototype.start = function (customInterval, rawFlag, percentile
         }
     }, interval);
 
-    this._counter = setInterval(()=> {
+    this._counter = setInterval(function() {
 
-        var _ticks = ticks.reduce((obj, val, i)=> {
+        var _ticks = ticks.reduce(function (obj, val, i) {
             if (i > 0) {
                 var key = Math.floor(((ticks[i][0] - ticks[i - 1][0]) * 1e9 + (ticks[i][1] - ticks[i - 1][1]) - interval * 1e6) / 1e3);
                 obj[key] = obj[key] || 0;
