@@ -12,6 +12,7 @@ function EventLoopMonitor() {
 
     this._loopMonitor = null;
     this._counter = null;
+    this.gc = (require('gc-stats'))(),
 
     events.EventEmitter.call(this);
 }
@@ -78,8 +79,48 @@ EventLoopMonitor.prototype.resume = function (customInterval) {
 
 };
 
+EventLoopMonitor.prototype.gsParse = function (stats) {
+
+}
 
 EventLoopMonitor.prototype.start = function (customInterval, rawFlag, percentileList) {
+    this.gc.on('stats', function (stats) {
+        switch (stats.gctype) {
+            case 1:
+                this.emit('gc', {
+                    type: 'scavenge',
+                    pause: stats.pause,
+                    ts: Date.now() / 1000 | 0,
+                    diff: stats.diff.totalHeapSize
+                });
+                break;
+            case 2:
+                this.emit('gc', {
+                    type: 'sweep',
+                    pause: stats.pause,
+                    ts: Date.now() / 1000 | 0,
+                    diff: stats.diff.totalHeapSize
+                });
+                break;
+            case 3:
+                this.emit('gc', {
+                    type: 'scavenge',
+                    pause: stats.pause,
+                    ts: Date.now() / 1000 | 0,
+                    diff: stats.diff.totalHeapSize
+                });
+                this.emit('gc', {
+                    type: 'sweep',
+                    pause: stats.pause,
+                    ts: Date.now() / 1000 | 0,
+                    diff: stats.diff.totalHeapSize
+                });
+                break;
+        }
+
+        this.emit('gc', stats)
+    }.bind(this));
+
     var customInterval = customInterval || 4 * 1000;
     var percentileList = percentileList || [0.5, 0.9, 0.99];
 
