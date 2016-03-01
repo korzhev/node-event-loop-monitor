@@ -8,11 +8,28 @@ var
     util = require("util"),
     events = require("events");
 
+function gcStatsFactory() {
+    return {
+        sweep: {
+            count: 0,
+            diff: 0,
+            pause: 0
+        },
+        scavenge: {
+            count: 0,
+            diff: 0,
+            pause: 0
+        }
+    }
+}
+
 function EventLoopMonitor() {
 
     this._loopMonitor = null;
     this._counter = null;
-    this.gc = (require('gc-stats'))(),
+    this._gcInterval = null;
+    this.gc = (require('gc-stats'))();
+    this.gcStats = gcStatsFactory();
 
     events.EventEmitter.call(this);
 }
@@ -21,6 +38,7 @@ util.inherits(EventLoopMonitor, events.EventEmitter);
 
 EventLoopMonitor.prototype.stop = function () {
     clearInterval(this._loopMonitor);
+    clearInterval(this._gcInterval);
     clearInterval(this._counter);
 };
 
@@ -79,47 +97,35 @@ EventLoopMonitor.prototype.resume = function (customInterval) {
 
 };
 
-EventLoopMonitor.prototype.gsParse = function (stats) {
-
-}
 
 EventLoopMonitor.prototype.start = function (customInterval, rawFlag, percentileList) {
     this.gc.on('stats', function (stats) {
         switch (stats.gctype) {
             case 1:
-                this.emit('gc', {
-                    type: 'scavenge',
-                    pause: stats.pause,
-                    ts: Date.now() / 1000 | 0,
-                    diff: stats.diff.totalHeapSize
-                });
+                this.gcStats.scavenge.count++;
+                this.gcStats.scavenge.diff += stats.diff.totalHeapSize;
+                this.gcStats.scavenge.pause += stats.pause / 10e6;
                 break;
             case 2:
-                this.emit('gc', {
-                    type: 'sweep',
-                    pause: stats.pause,
-                    ts: Date.now() / 1000 | 0,
-                    diff: stats.diff.totalHeapSize
-                });
+                this.gcStats.sweep.count++;
+                this.gcStats.sweep.diff += stats.diff.totalHeapSize;
+                this.gcStats.sweep.pause += stats.pause / 10e6;
                 break;
             case 3:
-                this.emit('gc', {
-                    type: 'scavenge',
-                    pause: stats.pause,
-                    ts: Date.now() / 1000 | 0,
-                    diff: stats.diff.totalHeapSize
-                });
-                this.emit('gc', {
-                    type: 'sweep',
-                    pause: stats.pause,
-                    ts: Date.now() / 1000 | 0,
-                    diff: stats.diff.totalHeapSize
-                });
+                this.gcStats.bouth.count++;
+                this.gcStats.bouth.diff += stats.diff.totalHeapSize;
+                this.gcStats.bouth.pause += stats.pause / 10e6;
                 break;
         }
-
-        this.emit('gc', stats)
     }.bind(this));
+
+    this._gcInterval = setInterval(function () {
+        this.emit('gc', this.gcStats);
+        this.gcStats = gcStatsFactory();
+        var mem = process.memoryUsage();
+        mem.ts = Date.now() / 1000 | 0;
+        this.emit('memory', mem);
+    }.bind(this), 5000);
 
     var customInterval = customInterval || 4 * 1000;
     var percentileList = percentileList || [0.5, 0.9, 0.99];
